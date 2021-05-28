@@ -1,0 +1,350 @@
+﻿using System;
+using System.Data;
+using System.Configuration;
+using System.Collections;
+using System.Web;
+using System.Web.Security;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Web.UI.WebControls.WebParts;
+using System.Web.UI.HtmlControls;
+using System.Net.Mail;
+using Microsoft.VisualBasic;
+using CrystalDecisions.Shared;
+using CrystalDecisions.CrystalReports.Engine;
+using System.Data.SqlClient;
+
+public partial class Usuario_Agregar : System.Web.UI.Page
+{
+
+    Sql obj_sql = new Sql();
+
+    Principales obj_principal = new Principales();
+    SmtpClient smtp = new SmtpClient("smtp-mail.outlook.com");
+    protected void Page_Init(object sender, EventArgs e)
+    {
+
+        smtp.EnableSsl = true;
+        smtp.UseDefaultCredentials = false;
+        smtp.Port = 587;
+        smtp.Credentials = new System.Net.NetworkCredential("jorgeperalta940429@hotmail.com", "Cocainamariguana71");
+       
+
+        obj_principal.obj_personas.void_personas_ambos_sexos();
+        DropDownListSexo.DataValueField = "id_persona";
+        DropDownListSexo.DataTextField = "persona";
+
+        DropDownListSexo.DataSource = obj_principal.obj_personas.tbl_personas_ambos_sexos.tabla_llena;
+        DropDownListSexo.DataBind();
+
+
+
+
+        obj_principal.obj_estados.void_estados_seleccionar();
+        DropDownListEstados.DataValueField = "id_estado";
+        DropDownListEstados.DataTextField = "estado";
+        DropDownListEstados.DataSource = obj_principal.obj_estados.tbl_estados_seleccionar.tabla_llena;
+        DropDownListEstados.DataBind();
+
+       
+
+        obj_principal.obj_municipios.id_estado=DropDownListEstados.SelectedValue.ToString();
+        obj_principal.obj_municipios.void_municipios_seleccionar();
+        DropDownListMunicipios.DataValueField = "id_municipio";
+        DropDownListMunicipios.DataTextField = "municipio";
+        DropDownListMunicipios.DataSource = obj_principal.obj_municipios.tbl_municipios_seleccionar.tabla_llena;
+        DropDownListMunicipios.DataBind();
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        Txt_username.Attributes.Add("placeholder", "Nombre de Usuario");
+        txt_email.Attributes.Add("placeholder", "E-mail");
+        txt_password.Attributes.Add("placeholder", "Password");
+        txt_password2.Attributes.Add("placeholder", "Confirmar Password");
+        txt_nombres.Attributes.Add("placeholder","Nombre");
+        txt_paterno.Attributes.Add("placeholder","Apellido Paterno");
+        txt_materno.Attributes.Add("placeholder", "Apellido Materno");
+        txt_telefono.Attributes.Add("placeholder", "Ejemplo 525539079761");
+        txt_calle.Attributes.Add("placeholder", "Calle");
+        txt_colonia.Attributes.Add("placeholder", "Colonia");
+        txt_numero_exterior.Attributes.Add("placeholder", "Número exterior");
+        txt_numero_interior.Attributes.Add("placeholder", "Número interior");
+        txt_codigo_postal.Attributes.Add("placeholder", "Código Postal");
+        
+
+      
+
+
+        
+
+    }
+
+
+
+
+
+    public void alertar(string mensaje)
+    {
+        Page.ClientScript.RegisterStartupScript(this.GetType(), "CallMyFunction", "alertar('" + mensaje + "')", true);
+    }
+    protected void Btn_usuario_agrega_Click(object sender, EventArgs e)
+    {
+
+     if(EmailValida()&NombreUsuarioValida()& TextBoxVlida(txt_password)&TextBoxVlida(txt_password2)&TextBoxVlida(txt_paterno)&TextBoxVlida(txt_materno)&TextBoxVlida(txt_numero_exterior)&TextBoxVlida(txt_numero_interior)&TextBoxVlida(txt_telefono)&TextBoxVlida(txt_nombres)&TextBoxVlida(txt_codigo_postal)&TextBoxVlida(txt_colonia)&TextBoxVlida(txt_calle)){
+      //empiaza condicion
+
+         //password iguales
+         if (PasswordIgualesValidar())
+         {
+             //validar sql
+             if(TxtSqlValid(Txt_username)){
+         obj_principal.obj_usuario.usuario = Txt_username.Text;
+         obj_principal.obj_usuario.email = txt_email.Text;
+         obj_principal.obj_usuario.password = txt_password.Text;
+         obj_principal.obj_usuario.nombre = txt_nombres.Text;
+         obj_principal.obj_usuario.paterno = txt_paterno.Text;
+         obj_principal.obj_usuario.materno = txt_materno.Text;
+         obj_principal.obj_usuario.genero = DropDownListSexo.SelectedValue.ToString();
+         obj_principal.obj_usuario.telefono = txt_telefono.Text;
+         obj_principal.obj_usuario.id_municipio = DropDownListMunicipios.SelectedValue.ToString();
+         obj_principal.obj_usuario.colonia = txt_colonia.Text;
+         obj_principal.obj_usuario.calle = txt_calle.Text;
+         obj_principal.obj_usuario.num_exterior = txt_numero_exterior.Text;
+         obj_principal.obj_usuario.num_interior = txt_numero_interior.Text;
+         obj_principal.obj_usuario.codigo_postal = txt_codigo_postal.Text;
+
+         obj_principal.obj_usuario.void_usuario_agregar();
+
+         // limpiar cajas de texto
+
+
+         Txt_username.Text = "";
+         txt_email.Text = "";
+         txt_password.Text = "";
+         txt_nombres.Text = "";
+         txt_paterno.Text = "";
+         txt_materno.Text = "";
+         txt_telefono.Text = "";
+         txt_colonia.Text = "";
+         txt_calle.Text = "";
+         txt_numero_exterior.Text = "";
+         txt_numero_interior.Text = "";
+         txt_codigo_postal.Text = "";
+
+
+
+         if (obj_principal.obj_usuario.tbl_usuario_agregar.tabla_llena.Rows.Count > 0)
+         {
+             string id_usuario = obj_principal.obj_usuario.tbl_usuario_agregar.tabla_llena.Rows[0]["id_usuario"].ToString();
+             string email = obj_principal.obj_usuario.tbl_usuario_agregar.tabla_llena.Rows[0]["email"].ToString();
+
+             //enviar confirmación
+
+
+
+
+
+             MailMessage mailMessage = new MailMessage();
+             MailAddress addrFrom = new MailAddress("jorgeperalta940429@hotmail.com");
+             MailAddress addTo = new MailAddress(email);
+             mailMessage.To.Add(addTo);
+             mailMessage.From = addrFrom;
+             mailMessage.Subject = "CONFIRMACION REGISTRO BABINEAUX";
+             mailMessage.Priority = MailPriority.High;
+             mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString("Confirmación de registro en BABINEAUX", new System.Net.Mime.ContentType("text/plain")));
+             mailMessage.IsBodyHtml = false;
+
+             //reporte
+             obj_principal.obj_reportes.nombre_reporte = Server.MapPath("Reportes/CrystalReport.rpt");
+             obj_principal.obj_reportes.total_parametros = 1;
+             obj_principal.obj_reportes.parametros[1, 1] = "@id_usuario";
+             obj_principal.obj_reportes.parametros[1, 2] = id_usuario;
+
+             obj_principal.obj_reportes.configurar();
+
+             mailMessage.Attachments.Add(new Attachment(obj_principal.obj_reportes.mi_reporte.ExportToStream(ExportFormatType.PortableDocFormat), "confirmación BABINEAUX.pdf"));
+
+             smtp.Send(mailMessage);
+
+
+             Response.Redirect("Comienzo.aspx");
+
+
+
+
+
+         }
+
+
+
+
+             //validar sql
+         }
+
+    //termina password iguales
+     }
+
+         //termina condicion
+
+     }
+
+
+
+
+
+
+
+
+
+
+     
+
+
+
+        
+
+        
+    }
+
+    protected void DropDownListEstados_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        obj_principal.obj_municipios.id_estado = DropDownListEstados.SelectedValue.ToString();
+        obj_principal.obj_municipios.void_municipios_seleccionar();
+        DropDownListMunicipios.DataValueField = "id_municipio";
+        DropDownListMunicipios.DataTextField = "municipio";
+        DropDownListMunicipios.DataSource = obj_principal.obj_municipios.tbl_municipios_seleccionar.tabla_llena;
+        DropDownListMunicipios.DataBind();
+    }
+    protected void Txt_username_TextChanged(object sender, EventArgs e)
+    {
+
+        NombreUsuarioValida();
+
+    }
+
+
+
+    protected void Txt_Email_TextChanged(object sender, EventArgs e)
+    {
+
+        EmailValida();
+
+    }
+
+    public bool TextBoxVlida(TextBox txt)
+    {
+
+        if(txt.Text.Equals("")){
+            txt.BorderColor = System.Drawing.Color.Red;
+            return false;
+        }
+        else{
+            txt.BorderColor = System.Drawing.Color.Green;
+            return true;
+        }
+
+    }
+
+
+
+
+
+    public bool EmailValida()
+    {
+
+
+        string email = txt_email.Text;
+        obj_principal.obj_usuario.email = email;
+        if (obj_principal.obj_usuario.void_usuario_email_valida() == true)
+        {
+
+            txt_email.BorderColor = System.Drawing.Color.Green;
+            return true;
+
+        }
+        else
+        {
+            txt_email.BorderColor = System.Drawing.Color.Red;
+            return false;
+
+        }
+    }
+
+
+
+
+    public bool NombreUsuarioValida()
+    {
+
+
+        string usuario_nombre = Txt_username.Text;
+        obj_principal.obj_usuario.usuario = usuario_nombre;
+        if (obj_principal.obj_usuario.void_usuario_nombre_usuario_valida() == true)
+        {
+            
+            Txt_username.BorderColor = System.Drawing.Color.Green;
+            return true;
+
+        }
+        else
+        {
+            
+            Txt_username.BorderColor = System.Drawing.Color.Red;
+            return false;
+        }
+
+    }
+
+    public bool PasswordIgualesValidar()
+    {
+if(txt_password.Text.Equals(txt_password2.Text)){
+    txt_password.BorderColor = System.Drawing.Color.Green;
+    txt_password2.BorderColor = System.Drawing.Color.Green;
+
+    
+
+    return true;
+}
+else{
+    txt_password.BorderColor = System.Drawing.Color.Red;
+    txt_password2.BorderColor = System.Drawing.Color.Red;
+    return false;
+}
+
+
+    }
+
+
+    public bool TxtSqlValid(TextBox txt)
+    {
+   
+        if(obj_sql.SqlVerify(txt.Text)==true){
+
+            
+            txt.BorderColor = System.Drawing.Color.Green;
+            return true;
+        }
+            else{
+                txt.BorderColor = System.Drawing.Color.Red;
+                return false;
+            }
+
+
+    }
+
+
+
+
+}
